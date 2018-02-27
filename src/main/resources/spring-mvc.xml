@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:c="http://www.springframework.org/schema/c" xmlns:cache="http://www.springframework.org/schema/cache"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:jee="http://www.springframework.org/schema/jee" xmlns:lang="http://www.springframework.org/schema/lang"
+       xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:task="http://www.springframework.org/schema/task" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.3.xsd
+		http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-4.3.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+
+    <!-- 自动扫描controller包下的所有类，使其认为spring mvc的控制器 -->
+    <context:component-scan base-package="aurora.controller"/>
+
+    <!-- 开启MVC注解,表示SpringMVC支持注解功能 做了很多事情，不包括添加自己定义的拦截器 -->
+    <mvc:annotation-driven/>
+
+    <!--使用默认的静态资源处理Servlet处理静态资源-->
+    <mvc:default-servlet-handler/>
+    <!-- <context:component-scan /> -->
+    <!-- 扫描指定的包中的类上的注解，常用的注解有： -->
+    <!-- @Controller 声明Action组件 -->
+    <!-- @Service 声明Service组件 @Service("xxxService") -->
+    <!-- @Repository 声明Dao组件 -->
+    <!-- @Component 泛指组件, 当不好归类时. -->
+    <!-- @RequestMapping("/menu") 请求映射 -->
+    <!-- @Resource 用于注入，( j2ee提供的 ) 默认按名称装配，@Resource(name="beanName") -->
+    <!-- @Autowired 用于注入，(spring提供的) 默认按类型装配 -->
+    <!-- @Transactional( rollbackFor={Exception.class}) 事务管理 -->
+    <!-- @ResponseBody将内容或对象作为 HTTP 响应正文返回，并调用适合HttpMessageConverter的Adapter转换对象，写入输出流 -->
+    <!-- @Scope("prototype") 设定bean的作用域 -->
+
+
+    <!-- 通过mvc:resources设置静态资源，这样servlet就会处理这些静态资源，而不通过控制器 -->
+    <!-- 设置不过滤内容，比如:css,jquery,img 等资源文件 -->
+    <!--<mvc:resources location="/index.html" mapping="/index.html" />
+    <mvc:resources location="/css/*" mapping="/css/**" />
+    <mvc:resources location="/js/*" mapping="/js/**" />
+    <mvc:resources location="/images/*" mapping="/images/**" />-->
+
+
+    <!-- 对模型视图名称的解析,在请求时模型视图名称添加前后缀 -->
+    <!--<bean id="viewResolver"
+        class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="viewClass"
+            value="org.springframework.web.servlet.view.JstlView" />
+        <property name="prefix" value="/" />      &lt;!&ndash; 前缀 &ndash;&gt;
+        <property name="suffix" value=".jsp" />   &lt;!&ndash; 后缀 &ndash;&gt;
+    </bean>
+-->
+    <!-- Spring MVC JSON配置 -->
+    <mvc:annotation-driven>
+        <!--配置@ResponseBody由fastjson解析-->
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <property name="defaultCharset" value="UTF-8"/>
+            </bean>
+
+            <bean id="fastJsonHttpMessageConverter" class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>text/html;charset=UTF-8</value><!-- 避免IE出现下载JSON文件的情况 -->
+                    </list>
+                </property>
+                <property name="features">
+                    <list>
+                        <value>PrettyFormat</value>
+                        <value>WriteMapNullValue</value>
+                        <value>WriteNullStringAsEmpty</value>
+                        <value>WriteNullListAsEmpty</value>
+                        <value>DisableCircularReferenceDetect</value>
+                    </list>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+    <mvc:interceptors>
+        <!--普通用户权限拦截器-->
+        <mvc:interceptor>
+            <mvc:mapping path="/**/*.aurora"/>
+            <bean class="aurora.utils.interceptor.SecurityInterceptor">
+                <!--不需要拦截的地址-->
+                <property name="excludeUrls">
+                    <list>
+                        <value>/log.aurora</value><!-- 用户登录 -->
+                        <value>/reg.aurora</value><!-- 用户注册 -->
+                        <value>/getVerifyCode.aurora</value><!--temp-->
+                    </list>
+                </property>
+                <property name="teaUrlsPrefix">
+                    <value>/tea/</value><!--教师端路径-->
+                </property>
+                <property name="stuUrlsPrefix">
+                    <value>/stu/</value><!--学生端路径-->
+                </property>
+            </bean>
+        </mvc:interceptor>
+
+
+        <!--管理员权限拦截器-->
+        <mvc:interceptor>
+            <mvc:mapping path="/druid/*"/>
+            <bean class="aurora.utils.interceptor.AdminInterceptor">
+
+            </bean>
+        </mvc:interceptor>
+
+        <!--openSessionView拦截器-->
+        <mvc:interceptor>
+            <mvc:mapping path="/**/*.aurora"/>
+            <bean class="org.springframework.orm.hibernate5.support.OpenSessionInViewInterceptor">
+                <property name="sessionFactory" ref="sessionFactory"/>
+            </bean>
+        </mvc:interceptor>
+
+
+    </mvc:interceptors>
+
+    <!--文件上传-->
+    <bean id = "multipartResolver"
+    class = "org.springframework.web.multipart.commons.CommonsMultipartResolver"
+    p:defaultEncoding="UTF-8"
+    p:maxUploadSize="10000000"
+    p:uploadTempDir="file:C:/temp/"/>
+
+    </beans>
